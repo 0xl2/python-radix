@@ -31,10 +31,13 @@ class Radix():
         
         if len(current) == 0:
             #Add first DNA sequence
-            current[string] = "_end"
+            # current[string] = "_end"
+            current[string] = 1
         else:
             for k, v in current.copy().items():
                 #comparing first two strings until gets initial newNode value
+                if len(k) == 0: continue
+                
                 if k[0] == string[0]:
                     if newNode == "":
                         for char in k:
@@ -89,27 +92,36 @@ class Radix():
                                     nextNode = nextNode[1:]
                                     break
                         newNode = finalNode
+
             if newNode != "":
                 try:
                     #If key has prefix already, add to children dict directly and compare the children for matches
                     if type(current[newNode]) == dict:
                         self.addString( string[len(newNode):], current[newNode], entireString)
+                    else:
+                        newDic = {'': current[newNode] + 1, string[len(newNode):] : 1}
+                        current.pop(newNode, None)
+                        current.setdefault(newNode, newDic)
                 #if prefix does not exist in dictionary yet                       
                 except KeyError:
                     #Adds string minus prefix to the dictionary
-                    newDic = {string[len(newNode):] : "_end"}
+                    # newDic = {string[len(newNode):] : "_end"}
+                    newDic = {string[len(newNode):] : 1}
                     for newKey in wordsToBeSplit:
                         #Adds prefix with words ending as new key to child dictionary
                         newDic[newKey[len(newNode):]] = current[newKey]
                         #get rid of key with _end and change to new dic
                         current.pop(newKey, None)
+                    
+                    if '' in newDic: newDic[''] += 1
                     current.setdefault(newNode, newDic)
                 except:
                     print("I got another exception, but I should re-raise.")
                     raise                
             #if no prefix add entire node 
             else:
-                current.setdefault(string, "_end")
+                # current.setdefault(string, "_end")
+                current.setdefault(string, 1)
 
     def delete(self, string, radix, entireWord, lastKey, lastDic, isVerified):
         """Removes string from tree by removing last child node of string"""
@@ -139,7 +151,7 @@ class Radix():
                     if type(v) == dict:
                         self.delete(string[len(k):], v, entireWord, k, current, verified)
                         return
-                    elif v == '_end':
+                    elif type(v) == int:
                     #If reaches last child node, remove it
                         current.pop(k, None)
                         #If no more child nodes, delete key
@@ -167,22 +179,25 @@ class Radix():
                 else:
                     matches = False
                     break
+
             if matches:
-                
                 if entireWord == totalWord:
-                    print("The string '" + totalWord + "' exists in the radix tree.")
+                    # print("The string '" + totalWord + "' exists in the radix tree.")
+                    if type(current[k]) == dict:
+                        current[k][''] = (current[k][''] + 1) if ('' in current[k]) else 1
+                    else:
+                        current[k] += 1
                     return True
                 else:
                     #Continue traversal with recursion
                     if type(v) == dict:
-                        self.search(string[len(k):], v, totalWord, entireWord)
-                        return
-                    elif v == "_end":
+                        return self.search(string[len(k):], v, totalWord, entireWord)
+                    elif type(v) == int:
                     #If reaches end of tree before end of word, word is not included in tree
-                        print("The string '" + entireWord + "' does NOT exist in the radix tree.")
+                        # print("The string '" + entireWord + "' does NOT exist in the radix tree.")
                         return False
         #Word does not match any keys -> takes a different path and is not included in tree
-        print("The string '" + entireWord + "' does NOT exist in the radix tree.")
+        # print("The string '" + entireWord + "' does NOT exist in the radix tree.")
         return False
 
     def totalStringCount(self):
@@ -209,17 +224,17 @@ class Radix():
         """List all nodes and the prefix they correspond to"""
         current = radix
         for k, v in current.items():
-            if type(v) == str:
+            if type(v) == int:
                 if lastKey == "":
-                    print("Node: " + k + "; Prefix: None")
+                    print("Word: '" + (lastKey + k) + "', Frequency: '" + str(v) + "'")
                 else:
-                    print("Node: " + k + "; Prefix: " + lastKey)
+                    print("Word: '" + (lastKey + k) + "', Frequency: '" + str(v) + "'")
             elif type(v) == dict:
-                if lastKey == "":
-                    print("Node: " + k + "; Prefix: None")
-                else:
-                    print("Node: " + k + "; Prefix: " + lastKey)
-                self.listAllNodes(v, k)
+                # if lastKey == "":
+                #     print("Node: " + k + "; Prefix: None")
+                # else:
+                #     print("Node: " + k + "; Prefix: " + lastKey)
+                self.listAllNodes(v, lastKey + k)
                 
     def printTree(self):
         """Prints the entire dictionary"""
